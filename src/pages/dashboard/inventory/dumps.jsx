@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { supabase } from "../../../utils/supabase";
 import { BASE, DumpLevel, CODE } from "../../../components/DumpBase";
+import { bins, zipCode } from "../../../components/countrys";
 import "../../../styles/dashboard/inventory/dumps.css";
 
 export default function Dumps() {
@@ -9,6 +10,15 @@ export default function Dumps() {
   const sortedBase = [...BASE].sort((a, b) => a.localeCompare(b));
   const sortedDumpLevel = [...DumpLevel].sort((a, b) => a.localeCompare(b));
   const sortedCode = [...CODE].sort((a, b) => Number(a) - Number(b));
+  const sortedBin = useMemo(() => {
+    if (!Array.isArray(bins)) return [];
+    return [...bins].sort((a, b) => a.localeCompare(b));
+  }, []);
+
+  const sortedZip = useMemo(() => {
+    if (!Array.isArray(zipCode)) return [];
+    return [...zipCode].sort((a, b) => a.localeCompare(b));
+  }, []);
 
   const [editingId, setEditingId] = useState(null);
 
@@ -24,6 +34,42 @@ export default function Dumps() {
   const [track1, setTrack1] = useState(false);
   const [pin, setPin] = useState(false);
   const [price, setPrice] = useState("");
+
+  const [zipSearch, setZipSearch] = useState("");
+  const [binSearch, setBinSearch] = useState("");
+
+  const [zipDropdownOpen, setZipDropdownOpen] = useState(false);
+  const [binDropdownOpen, setBinDropdownOpen] = useState(false);
+
+  const zipDropdownRef = useRef(null);
+  const binDropdownRef = useRef(null);
+
+  const zipSearchInputRef = useRef(null);
+  const binSearchInputRef = useRef(null);
+
+  const filteredZip = useMemo(() => {
+    const query = zipSearch.trim().toLowerCase();
+    const matches = query
+      ? sortedZip.filter((item) => item.toLowerCase().includes(query))
+      : sortedZip;
+
+    if (zip && !matches.includes(zip)) {
+      return [zip, ...matches];
+    }
+    return matches;
+  }, [sortedZip, zipSearch, zip]);
+
+  const filteredBin = useMemo(() => {
+    const query = binSearch.trim().toLowerCase();
+    const matches = query
+      ? sortedBin.filter((item) => item.toLowerCase().includes(query))
+      : sortedBin;
+
+    if (bin && !matches.includes(bin)) {
+      return [bin, ...matches];
+    }
+    return matches;
+  }, [sortedBin, binSearch, bin]);
 
   useEffect(() => {
     let isMounted = true;
@@ -49,6 +95,70 @@ export default function Dumps() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!zipDropdownOpen) return;
+
+    const handleOutsideClick = (e) => {
+      if (
+        zipDropdownRef.current &&
+        !zipDropdownRef.current.contains(e.target)
+      ) {
+        setZipDropdownOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setZipDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("keydown", handleKeyDown);
+
+    const focusTimer = setTimeout(() => {
+      zipSearchInputRef.current?.focus();
+    }, 0);
+
+    return () => {
+      clearTimeout(focusTimer);
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [zipDropdownOpen]);
+
+  useEffect(() => {
+    if (!binDropdownOpen) return;
+
+    const handleOutsideClick = (e) => {
+      if (
+        binDropdownRef.current &&
+        !binDropdownRef.current.contains(e.target)
+      ) {
+        setBinDropdownOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setBinDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("keydown", handleKeyDown);
+
+    const focusTimer = setTimeout(() => {
+      binSearchInputRef.current?.focus();
+    }, 0);
+
+    return () => {
+      clearTimeout(focusTimer);
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [binDropdownOpen]);
 
   const fetchDumps = async () => {
     const { data, error } = await supabase
@@ -189,7 +299,66 @@ export default function Dumps() {
 
             <div className="dumps-form-group">
               <label htmlFor="bin">Bin</label>
-              <input id="bin" type="text" placeholder="e.g. 541344" value={bin} onChange={(e) => setBin(e.target.value)} required />
+              <div className="cvv-select-wrapper">
+                <button
+                  id="bin-trigger"
+                  type="button"
+                  className="cvv-select-trigger"
+                  onClick={() => setBinDropdownOpen((prev) => !prev)}
+                  aria-expanded={binDropdownOpen}
+                >
+                  <span className={bin ? "" : "cvv-select-placeholder"}>
+                    {bin || "Select bin"}
+                  </span>
+                  <span className="cvv-select-arrow">
+                    {binDropdownOpen ? "▲" : "▼"}
+                  </span>
+                </button>
+
+                {binDropdownOpen && (
+                  <div className="cvv-select-menu">
+                    <div className="cvv-select-search-box">
+                      <input
+                        ref={binSearchInputRef}
+                        type="text"
+                        className="cvv-select-search-input"
+                        placeholder="Search bin..."
+                        value={binSearch}
+                        onChange={(e) => setBinSearch(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+
+                    <div className="cvv-select-options">
+                      {filteredBin.length > 0 ? (
+                        filteredBin.map((item, index) => {
+                          const isSelected = item === bin;
+                          return (
+                            <button
+                              key={`${item}-${index}`}
+                              type="button"
+                              className={`cvv-select-option ${
+                                isSelected ? "selected" : ""
+                              }`}
+                              onClick={() => {
+                                setBin(item);
+                                setBinSearch("");
+                                setBinDropdownOpen(false);
+                              }}
+                            >
+                              {item}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div className="cvv-select-no-results">
+                          No matching bins found
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="dumps-form-group">
@@ -243,7 +412,66 @@ export default function Dumps() {
 
             <div className="dumps-form-group">
               <label htmlFor="zip">Zip</label>
-              <input id="zip" type="text" placeholder="90210" value={zip} onChange={(e) => setZip(e.target.value)} />
+              <div className="cvv-select-wrapper">
+                <button
+                  id="zip-trigger"
+                  type="button"
+                  className="cvv-select-trigger"
+                  onClick={() => setZipDropdownOpen((prev) => !prev)}
+                  aria-expanded={zipDropdownOpen}
+                >
+                  <span className={zip ? "" : "cvv-select-placeholder"}>
+                    {zip || "Select zip"}
+                  </span>
+                  <span className="cvv-select-arrow">
+                    {zipDropdownOpen ? "▲" : "▼"}
+                  </span>
+                </button>
+
+                {zipDropdownOpen && (
+                  <div className="cvv-select-menu">
+                    <div className="cvv-select-search-box">
+                      <input
+                        ref={zipSearchInputRef}
+                        type="text"
+                        className="cvv-select-search-input"
+                        placeholder="Search zip..."
+                        value={zipSearch}
+                        onChange={(e) => setZipSearch(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+
+                    <div className="cvv-select-options">
+                      {filteredZip.length > 0 ? (
+                        filteredZip.map((item, index) => {
+                          const isSelected = item === zip;
+                          return (
+                            <button
+                              key={`${item}-${index}`}
+                              type="button"
+                              className={`cvv-select-option ${
+                                isSelected ? "selected" : ""
+                              }`}
+                              onClick={() => {
+                                setZip(item);
+                                setZipSearch("");
+                                setZipDropdownOpen(false);
+                              }}
+                            >
+                              {item}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div className="cvv-select-no-results">
+                          No matching Zips found
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="dumps-form-group">

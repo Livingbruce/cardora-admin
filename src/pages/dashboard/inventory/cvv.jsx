@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { supabase } from "../../../utils/supabase";
-import { banks, bins, zipCode } from "../../../components/countrys";
+import { banks, bins, zipCode, states, countries, STATE_TO_COUNTRY, cities, names } from "../../../components/countrys";
 import "../../../styles/dashboard/inventory/cvv.css";
 
 const normalizeCvvRow = (row) => ({
@@ -35,9 +35,17 @@ export default function Cvv() {
   const [bankSearch, setBankSearch] = useState("");
   const [zipSearch, setZipSearch] = useState("");
   const [binSearch, setBinSearch] = useState("");
+  const [stateSearch, setStateSearch] = useState("");
+  const [countrySearch, setCountrySearch] = useState("");
+  const [citySearch, setCitySearch] = useState("");
+
   const [bankDropdownOpen, setBankDropdownOpen] = useState(false);
   const [zipDropdownOpen, setZipDropdownOpen] = useState(false);
   const [binDropdownOpen, setBinDropdownOpen] = useState(false);
+  const [stateDropdownOpen, setStateDropdownOpen] = useState(false);
+  const [countryDropdownOpen, setCountryDropdownOpen] = useState(false);
+  const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
+
   const [cardType, setCardType] = useState("");
   const [cardLevel, setCardLevel] = useState("");
   const [expiry, setExpiry] = useState("");
@@ -59,9 +67,16 @@ export default function Cvv() {
   const bankDropdownRef = useRef(null);
   const zipDropdownRef = useRef(null);
   const binDropdownRef = useRef(null);
+  const stateDropdownRef = useRef(null);
+  const countryDropdownRef = useRef(null);
+  const cityDropdownRef = useRef(null);
+
   const bankSearchInputRef = useRef(null);
   const zipSearchInputRef = useRef(null);
   const binSearchInputRef = useRef(null);
+  const stateSearchInputRef = useRef(null);
+  const countrySearchInputRef = useRef(null);
+  const citySearchInputRef = useRef(null);
 
   const sortedBank = useMemo(() => {
     if (!Array.isArray(banks)) return [];
@@ -78,6 +93,23 @@ export default function Cvv() {
     return [...zipCode].sort((a, b) => a.localeCompare(b));
   }, []);
 
+  const sortedStates = useMemo(() => {
+    if (!Array.isArray(states)) return [];
+    return [...states].sort((a, b) => a.localeCompare(b));
+  }, []);
+
+  const sortedCountries = useMemo(() => {
+    if (!Array.isArray(countries)) return [];
+    return [...countries].sort((a, b) => a.localeCompare(b));
+  }, []);
+
+  const sortedCity = useMemo(() => {
+    if (!Array.isArray(cities)) return [];
+    return [...cities].sort((a, b) => a.localeCompare(b));
+  }, []);
+
+  const sortedName = [...names].sort((a, b) => a.localeCompare(b));
+
   const filteredBanks = useMemo(() => {
     const query = bankSearch.trim().toLowerCase();
     const matches = query
@@ -91,10 +123,10 @@ export default function Cvv() {
   }, [sortedBank, bankSearch, bank]);
 
   const filteredZip = useMemo(() => {
-    const query = zipSearch.trim().toLocaleLowerCase();
+    const query = zipSearch.trim().toLowerCase();
     const matches = query
       ? sortedZip.filter((item) => item.toLowerCase().includes(query))
-      : sortedZip
+      : sortedZip;
 
     if (zip && !matches.includes(zip)) {
       return [zip, ...matches];
@@ -106,13 +138,60 @@ export default function Cvv() {
     const query = binSearch.trim().toLowerCase();
     const matches = query
       ? sortedBin.filter((item) => item.toLowerCase().includes(query))
-      : sortedBin
+      : sortedBin;
 
     if (bin && !matches.includes(bin)) {
       return [bin, ...matches];
     }
     return matches;
   }, [sortedBin, binSearch, bin]);
+
+  const filteredStates = useMemo(() => {
+    const query = stateSearch.trim().toLowerCase();
+    const matches = query
+      ? sortedStates.filter((item) => item.toLowerCase().includes(query))
+      : sortedStates;
+
+    if (state && !matches.includes(state)) {
+      return [state, ...matches];
+    }
+    return matches;
+  }, [sortedStates, stateSearch, state]);
+
+  const filteredCountries = useMemo(() => {
+    const query = countrySearch.trim().toLowerCase();
+    const matches = query
+      ? sortedCountries.filter((item) => item.toLowerCase().includes(query))
+      : sortedCountries;
+
+    if (country && !matches.includes(country)) {
+      return [country, ...matches];
+    }
+    return matches;
+  }, [sortedCountries, countrySearch, country]);
+
+  const filteredCity = useMemo(() => {
+    const query = citySearch.trim().toLowerCase();
+    const matches = query
+      ? sortedCity.filter((item) => item.toLowerCase().includes(query))
+      : sortedCity;
+
+    if (city && !matches.includes(city)) {
+      return [city, ...matches];
+    }
+    return matches;
+  }, [sortedCity, citySearch, city]);
+
+  const handleSelectState = (selectedState) => {
+    setState(selectedState);
+    setStateSearch("");
+    setStateDropdownOpen(false);
+
+    const matchedCountry = STATE_TO_COUNTRY[selectedState];
+    if (matchedCountry) {
+      setCountry(matchedCountry);
+    }
+  };
 
   const fetchCvvStock = useCallback(async (isMounted = () => true) => {
     try {
@@ -263,19 +342,123 @@ export default function Cvv() {
     };
   }, [binDropdownOpen]);
 
+  useEffect(() => {
+    if (!stateDropdownOpen) return;
+
+    const handleOutsideClick = (e) => {
+      if (
+        stateDropdownRef.current &&
+        !stateDropdownRef.current.contains(e.target)
+      ) {
+        setStateDropdownOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setStateDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("keydown", handleKeyDown);
+
+    const focusTimer = setTimeout(() => {
+      stateSearchInputRef.current?.focus();
+    }, 0);
+
+    return () => {
+      clearTimeout(focusTimer);
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [stateDropdownOpen]);
+
+  useEffect(() => {
+    if (!countryDropdownOpen) return;
+
+    const handleOutsideClick = (e) => {
+      if (
+        countryDropdownRef.current &&
+        !countryDropdownRef.current.contains(e.target)
+      ) {
+        setCountryDropdownOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setCountryDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("keydown", handleKeyDown);
+
+    const focusTimer = setTimeout(() => {
+      countrySearchInputRef.current?.focus();
+    }, 0);
+
+    return () => {
+      clearTimeout(focusTimer);
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [countryDropdownOpen]);
+
+  useEffect(() => {
+    if (!cityDropdownOpen) return;
+
+    const handleOutsideClick = (e) => {
+      if (
+        cityDropdownRef.current &&
+        !cityDropdownRef.current.contains(e.target)
+      ) {
+        setCityDropdownOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setCityDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("keydown", handleKeyDown);
+
+    const focusTimer = setTimeout(() => {
+      citySearchInputRef.current?.focus();
+    }, 0);
+
+    return () => {
+      clearTimeout(focusTimer);
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [cityDropdownOpen]);
+
   const resetForm = () => {
     setEditingId(null);
     setBin("");
+    setBinSearch("");
+    setBinDropdownOpen(false);
     setBank("");
     setBankSearch("");
     setBankDropdownOpen(false);
+    setZip("");
+    setZipSearch("");
+    setZipDropdownOpen(false);
+    setState("");
+    setStateSearch("");
+    setStateDropdownOpen(false);
+    setCountry("");
+    setCountrySearch("");
+    setCountryDropdownOpen(false);
     setCardType("");
     setCardLevel("");
     setExpiry("");
-    setCountry("");
-    setState("");
     setCity("");
-    setZip("");
     setFname("");
     setAddress(false);
     setPhone(false);
@@ -288,16 +471,24 @@ export default function Cvv() {
   const handleSelectRow = (item) => {
     setEditingId(item.id);
     setBin(item.bin);
+    setBinSearch("");
+    setBinDropdownOpen(false);
     setBank(item.bank);
     setBankSearch("");
     setBankDropdownOpen(false);
+    setZip(item.zip);
+    setZipSearch("");
+    setZipDropdownOpen(false);
+    setState(item.state);
+    setStateSearch("");
+    setStateDropdownOpen(false);
+    setCountry(item.country);
+    setCountrySearch("");
+    setCountryDropdownOpen(false);
     setCardType(item.cardType);
     setCardLevel(item.cardLevel);
     setExpiry(item.expiry);
-    setCountry(item.country);
-    setState(item.state);
     setCity(item.city);
-    setZip(item.zip);
     setFname(item.fname);
     setAddress(item.address);
     setPhone(item.phone);
@@ -431,8 +622,8 @@ export default function Cvv() {
 
         <form onSubmit={handleSave}>
           <div className="cvv-form-grid">
-            <div className="cvv-form-group">
-              <label htmlFor="bin">Bin Field</label>
+            <div className="cvv-form-group" ref={binDropdownRef}>
+              <label htmlFor="bin-trigger">Bin Field</label>
               <div className="cvv-select-wrapper">
                 <button
                   id="bin-trigger"
@@ -566,7 +757,7 @@ export default function Cvv() {
                 value={cardType}
                 onChange={(e) => setCardType(e.target.value)}
               >
-                <option>Select Type</option>
+                <option value="">Select Type</option>
                 <option value="credit">Credit</option>
                 <option value="debit">Debit</option>
                 <option value="charge card">Charge Card</option>
@@ -580,7 +771,7 @@ export default function Cvv() {
                 value={cardLevel}
                 onChange={(e) => setCardLevel(e.target.value)}
               >
-                <option>Select Level</option>
+                <option value="">Select Level</option>
                 <option value="atm card">ATM Card</option>
                 <option value="B2B">B2B</option>
                 <option value="black">Black</option>
@@ -601,41 +792,196 @@ export default function Cvv() {
               />
             </div>
 
-            <div className="cvv-form-group">
-              <label htmlFor="country">Country</label>
-              <input
-                id="country"
-                type="text"
-                placeholder="e.g. US"
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-              />
+            <div className="cvv-form-group" ref={stateDropdownRef}>
+              <label htmlFor="state-trigger">State</label>
+              <div className="cvv-select-wrapper">
+                <button
+                  id="state-trigger"
+                  type="button"
+                  className="cvv-select-trigger"
+                  onClick={() => setStateDropdownOpen((prev) => !prev)}
+                  aria-expanded={stateDropdownOpen}
+                >
+                  <span className={state ? "" : "cvv-select-placeholder"}>
+                    {state || "Select state"}
+                  </span>
+                  <span className="cvv-select-arrow">
+                    {stateDropdownOpen ? "▲" : "▼"}
+                  </span>
+                </button>
+
+                {stateDropdownOpen && (
+                  <div className="cvv-select-menu">
+                    <div className="cvv-select-search-box">
+                      <input
+                        ref={stateSearchInputRef}
+                        type="text"
+                        className="cvv-select-search-input"
+                        placeholder="Search state..."
+                        value={stateSearch}
+                        onChange={(e) => setStateSearch(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+
+                    <div className="cvv-select-options">
+                      {filteredStates.length > 0 ? (
+                        filteredStates.map((item, index) => {
+                          const isSelected = item === state;
+                          return (
+                            <button
+                              key={`${item}-${index}`}
+                              type="button"
+                              className={`cvv-select-option ${
+                                isSelected ? "selected" : ""
+                              }`}
+                              onClick={() => handleSelectState(item)}
+                            >
+                              {item}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div className="cvv-select-no-results">
+                          No matching states found
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="cvv-form-group">
-              <label htmlFor="state">State</label>
-              <input
-                id="state"
-                type="text"
-                placeholder="e.g. NY"
-                value={state}
-                onChange={(e) => setState(e.target.value)}
-              />
+            <div className="cvv-form-group" ref={countryDropdownRef}>
+              <label htmlFor="country-trigger">Country</label>
+              <div className="cvv-select-wrapper">
+                <button
+                  id="country-trigger"
+                  type="button"
+                  className="cvv-select-trigger"
+                  onClick={() => setCountryDropdownOpen((prev) => !prev)}
+                  aria-expanded={countryDropdownOpen}
+                >
+                  <span className={country ? "" : "cvv-select-placeholder"}>
+                    {country || "Select country"}
+                  </span>
+                  <span className="cvv-select-arrow">
+                    {countryDropdownOpen ? "▲" : "▼"}
+                  </span>
+                </button>
+
+                {countryDropdownOpen && (
+                  <div className="cvv-select-menu">
+                    <div className="cvv-select-search-box">
+                      <input
+                        ref={countrySearchInputRef}
+                        type="text"
+                        className="cvv-select-search-input"
+                        placeholder="Search country..."
+                        value={countrySearch}
+                        onChange={(e) => setCountrySearch(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+
+                    <div className="cvv-select-options">
+                      {filteredCountries.length > 0 ? (
+                        filteredCountries.map((item, index) => {
+                          const isSelected = item === country;
+                          return (
+                            <button
+                              key={`${item}-${index}`}
+                              type="button"
+                              className={`cvv-select-option ${
+                                isSelected ? "selected" : ""
+                              }`}
+                              onClick={() => {
+                                setCountry(item);
+                                setCountrySearch("");
+                                setCountryDropdownOpen(false);
+                              }}
+                            >
+                              {item}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div className="cvv-select-no-results">
+                          No matching countries found
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="cvv-form-group">
               <label htmlFor="city">City</label>
-              <input
-                id="city"
-                type="text"
-                placeholder="e.g. New York"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-              />
+              <div className="cvv-select-wrapper">
+                <button
+                  id="city-trigger"
+                  type="button"
+                  className="cvv-select-trigger"
+                  onClick={() => setCityDropdownOpen((prev) => !prev)}
+                  aria-expanded={cityDropdownOpen}
+                >
+                  <span className={city ? "" : "cvv-select-placeholder"}>
+                    {city || "Select city"}
+                  </span>
+                  <span className="cvv-select-arrow">
+                    {cityDropdownOpen ? "▲" : "▼"}
+                  </span>
+                </button>
+
+                {cityDropdownOpen && (
+                  <div className="cvv-select-menu">
+                    <div className="cvv-select-search-box">
+                      <input
+                        ref={citySearchInputRef}
+                        type="text"
+                        className="cvv-select-search-input"
+                        placeholder="Search city..."
+                        value={citySearch}
+                        onChange={(e) => setCitySearch(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+
+                    <div className="cvv-select-options">
+                      {filteredCity.length > 0 ? (
+                        filteredCity.map((item, index) => {
+                          const isSelected = item === bank;
+                          return (
+                            <button
+                              key={`${item}-${index}`}
+                              type="button"
+                              className={`cvv-select-option ${
+                                isSelected ? "selected" : ""
+                              }`}
+                              onClick={() => {
+                                setCity(item);
+                                setCitySearch("");
+                                setCityDropdownOpen(false);
+                              }}
+                            >
+                              {item}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div className="cvv-select-no-results">
+                          No matching city found
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="cvv-form-group">
-              <label htmlFor="zip">Zip</label>
+            <div className="cvv-form-group" ref={zipDropdownRef}>
+              <label htmlFor="zip-trigger">Zip</label>
               <div className="cvv-select-wrapper">
                 <button
                   id="zip-trigger"
@@ -669,7 +1015,7 @@ export default function Cvv() {
                     <div className="cvv-select-options">
                       {filteredZip.length > 0 ? (
                         filteredZip.map((item, index) => {
-                          const isSelected = item === bank;
+                          const isSelected = item === zip;
                           return (
                             <button
                               key={`${item}-${index}`}
@@ -700,13 +1046,11 @@ export default function Cvv() {
 
             <div className="cvv-form-group">
               <label htmlFor="fname">Fname (Cardholder Name)</label>
-              <input
-                id="fname"
-                type="text"
-                placeholder="John Doe"
-                value={fname}
-                onChange={(e) => setFname(e.target.value)}
-              />
+              <select id="fname" value={fname} onChange={(e) => setFname(e.target.value)}>
+                {sortedName.map((item, index) => (
+                  <option key={index} value={item}>{item}</option>
+                ))}
+              </select>
             </div>
 
             <div className="cvv-form-group">
@@ -719,6 +1063,7 @@ export default function Cvv() {
                 placeholder="15.00"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
+                onWheel={(e) => e.target.blur()}
                 required
               />
             </div>
