@@ -1,0 +1,153 @@
+.payments-container {
+  color: #1e293b;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.payments-header {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 20px 0;
+}
+
+.payments-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.payments-tab-btn {
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.payments-tab-btn:hover {
+  background-color: #e2e8f0;
+  color: #0f172a;
+}
+
+.payments-tab-btn.active {
+  background-color: #1e1e2f;
+  color: #ffffff;
+  border-color: #1e1e2f;
+}
+
+.payments-table-section {
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.payments-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.payments-table {
+  width: 100%;
+  min-width: 750px;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.payments-table th {
+  background-color: #1e1e2f;
+  color: #ffffff;
+  padding: 14px 18px;
+  font-weight: 600;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.payments-table td {
+  padding: 14px 18px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #334155;
+}
+
+.payments-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.payments-empty-row {
+  text-align: center;
+  color: #64748b;
+  padding: 40px !important;
+  font-weight: 500;
+  white-space: normal;
+}
+
+.payments-action-group {
+  display: flex;
+  gap: 8px;
+}
+
+.payments-btn-approve {
+  background-color: #10b981;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.payments-btn-approve:hover {
+  background-color: #059669;
+}
+
+.payments-btn-cancel {
+  background-color: #ef4444;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.payments-btn-cancel:hover {
+  background-color: #dc2626;
+}
+
+.payments-status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.payments-status-badge.approved {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.payments-status-badge.cancelled {
+  background-color: #fee2e2;
+  color: #991b1b;
+}

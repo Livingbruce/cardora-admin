@@ -1,0 +1,347 @@
+.cvv-inventory-container {
+  color: #1e293b;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.cvv-header {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.cvv-form-card {
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.cvv-form-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 16px 0;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 10px;
+}
+
+.cvv-form-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 16px;
+}
+
+.cvv-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cvv-form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.cvv-form-group label {
+  font-weight: 600;
+  color: #334155;
+  font-size: 0.85rem;
+}
+
+.cvv-form-group input,
+.cvv-form-group select {
+  width: 100%;
+  padding: 10px 14px;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: #0f172a;
+  box-sizing: border-box;
+}
+
+.cvv-form-group input:focus,
+.cvv-form-group select:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.cvv-select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.cvv-select-trigger {
+  width: 100%;
+  padding: 10px 14px;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: #0f172a;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.cvv-select-trigger:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.cvv-select-trigger span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cvv-select-placeholder {
+  color: #64748b;
+}
+
+.cvv-select-arrow {
+  font-size: 0.72rem;
+  color: #475569;
+  flex-shrink: 0;
+}
+
+.cvv-select-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background-color: #ffffff;
+  border: 1px solid #94a3b8;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
+  overflow: hidden;
+}
+
+.cvv-select-search-box {
+  padding: 8px;
+  border-bottom: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+}
+
+.cvv-select-search-input {
+  width: 100%;
+  padding: 8px 10px;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.88rem;
+  color: #0f172a;
+  box-sizing: border-box;
+}
+
+.cvv-select-search-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.cvv-select-options {
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.cvv-select-option {
+  width: 100%;
+  padding: 9px 12px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #f1f5f9;
+  text-align: left;
+  font-family: inherit;
+  font-size: 0.88rem;
+  color: #1e293b;
+  cursor: pointer;
+}
+
+.cvv-select-option:last-child {
+  border-bottom: none;
+}
+
+.cvv-select-option:hover {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+}
+
+.cvv-select-option.selected {
+  background-color: #dbeafe;
+  color: #1e40af;
+  font-weight: 600;
+}
+
+.cvv-select-no-results {
+  padding: 14px 12px;
+  text-align: center;
+  font-size: 0.86rem;
+  color: #64748b;
+}
+
+.cvv-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 14px;
+  box-sizing: border-box;
+}
+
+.cvv-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #334155;
+  cursor: pointer;
+}
+
+.cvv-checkbox-item input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.cvv-form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  justify-content: flex-end;
+}
+
+.cvv-btn-submit {
+  background-color: #10b981;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.cvv-btn-submit:hover {
+  background-color: #059669;
+}
+
+.cvv-btn-delete {
+  background-color: #ef4444;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.cvv-btn-delete:hover {
+  background-color: #dc2626;
+}
+
+.cvv-btn-cancel {
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cvv-btn-cancel:hover {
+  background-color: #e2e8f0;
+  color: #0f172a;
+}
+
+.cvv-table-section {
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.cvv-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cvv-table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.cvv-table th {
+  background-color: #1e1e2f;
+  color: #ffffff;
+  padding: 14px 16px;
+  font-weight: 600;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cvv-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #334155;
+}
+
+.cvv-table tbody tr {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.cvv-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.cvv-table tbody tr.selected {
+  background-color: #eff6ff;
+}
+
+.cvv-empty-row {
+  text-align: center;
+  color: #64748b;
+  padding: 30px !important;
+  font-weight: 500;
+  cursor: default !important;
+}
+
+@media (min-width: 768px) {
+  .cvv-form-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .cvv-checkbox-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}

@@ -1,0 +1,203 @@
+.bins-inventory-container {
+  color: #1e293b;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.bins-header {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.bins-form-card {
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.bins-form-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 16px 0;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 10px;
+}
+
+.bins-form-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 16px;
+}
+
+.bins-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bins-form-group label {
+  font-weight: 600;
+  color: #334155;
+  font-size: 0.85rem;
+}
+
+.bins-form-group input,
+.bins-form-group select {
+  width: 100%;
+  padding: 10px 14px;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: #0f172a;
+  box-sizing: border-box;
+}
+
+.bins-form-group input:focus,
+.bins-form-group select:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.bins-form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  justify-content: flex-end;
+}
+
+.bins-btn-submit {
+  background-color: #10b981;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.bins-btn-submit:hover {
+  background-color: #059669;
+}
+
+.bins-btn-delete {
+  background-color: #ef4444;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.bins-btn-delete:hover {
+  background-color: #dc2626;
+}
+
+.bins-btn-cancel {
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bins-btn-cancel:hover {
+  background-color: #e2e8f0;
+  color: #0f172a;
+}
+
+/* Table Section */
+.bins-table-section {
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.bins-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.bins-table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.bins-table th {
+  background-color: #1e1e2f;
+  color: #ffffff;
+  padding: 14px 16px;
+  font-weight: 600;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bins-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #334155;
+}
+
+.bins-table tbody tr {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.bins-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+.bins-table tbody tr.selected {
+  background-color: #eff6ff;
+}
+
+.bins-price-badge {
+  font-weight: 700;
+  color: #059669;
+}
+
+.bins-empty-row {
+  text-align: center;
+  color: #64748b;
+  padding: 30px !important;
+  font-weight: 500;
+  cursor: default !important;
+}
+
+@media (min-width: 768px) {
+  .bins-form-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .bins-form-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
