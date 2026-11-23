@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { supabase } from "../../../utils/supabase";
-import { banks } from "../../../components/countrys";
+import { banks, bins, zipCode } from "../../../components/countrys";
 import "../../../styles/dashboard/inventory/cvv.css";
 
 const normalizeCvvRow = (row) => ({
@@ -33,7 +33,11 @@ export default function Cvv() {
   const [bin, setBin] = useState("");
   const [bank, setBank] = useState("");
   const [bankSearch, setBankSearch] = useState("");
+  const [zipSearch, setZipSearch] = useState("");
+  const [binSearch, setBinSearch] = useState("");
   const [bankDropdownOpen, setBankDropdownOpen] = useState(false);
+  const [zipDropdownOpen, setZipDropdownOpen] = useState(false);
+  const [binDropdownOpen, setBinDropdownOpen] = useState(false);
   const [cardType, setCardType] = useState("");
   const [cardLevel, setCardLevel] = useState("");
   const [expiry, setExpiry] = useState("");
@@ -53,11 +57,25 @@ export default function Cvv() {
   const [price, setPrice] = useState("");
 
   const bankDropdownRef = useRef(null);
+  const zipDropdownRef = useRef(null);
+  const binDropdownRef = useRef(null);
   const bankSearchInputRef = useRef(null);
+  const zipSearchInputRef = useRef(null);
+  const binSearchInputRef = useRef(null);
 
   const sortedBank = useMemo(() => {
     if (!Array.isArray(banks)) return [];
     return [...banks].sort((a, b) => a.localeCompare(b));
+  }, []);
+
+  const sortedBin = useMemo(() => {
+    if (!Array.isArray(bins)) return [];
+    return [...bins].sort((a, b) => a.localeCompare(b));
+  }, []);
+
+  const sortedZip = useMemo(() => {
+    if (!Array.isArray(zipCode)) return [];
+    return [...zipCode].sort((a, b) => a.localeCompare(b));
   }, []);
 
   const filteredBanks = useMemo(() => {
@@ -71,6 +89,30 @@ export default function Cvv() {
     }
     return matches;
   }, [sortedBank, bankSearch, bank]);
+
+  const filteredZip = useMemo(() => {
+    const query = zipSearch.trim().toLocaleLowerCase();
+    const matches = query
+      ? sortedZip.filter((item) => item.toLowerCase().includes(query))
+      : sortedZip
+
+    if (zip && !matches.includes(zip)) {
+      return [zip, ...matches];
+    }
+    return matches;
+  }, [sortedZip, zipSearch, zip]);
+
+  const filteredBin = useMemo(() => {
+    const query = binSearch.trim().toLowerCase();
+    const matches = query
+      ? sortedBin.filter((item) => item.toLowerCase().includes(query))
+      : sortedBin
+
+    if (bin && !matches.includes(bin)) {
+      return [bin, ...matches];
+    }
+    return matches;
+  }, [sortedBin, binSearch, bin]);
 
   const fetchCvvStock = useCallback(async (isMounted = () => true) => {
     try {
@@ -156,6 +198,70 @@ export default function Cvv() {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [bankDropdownOpen]);
+
+  useEffect(() => {
+    if (!zipDropdownOpen) return;
+
+    const handleOutsideClick = (e) => {
+      if (
+        zipDropdownRef.current &&
+        !zipDropdownRef.current.contains(e.target)
+      ) {
+        setZipDropdownOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setZipDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("keydown", handleKeyDown);
+
+    const focusTimer = setTimeout(() => {
+      zipSearchInputRef.current?.focus();
+    }, 0);
+
+    return () => {
+      clearTimeout(focusTimer);
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [zipDropdownOpen]);
+
+  useEffect(() => {
+    if (!binDropdownOpen) return;
+
+    const handleOutsideClick = (e) => {
+      if (
+        binDropdownRef.current &&
+        !binDropdownRef.current.contains(e.target)
+      ) {
+        setBinDropdownOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setBinDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("keydown", handleKeyDown);
+
+    const focusTimer = setTimeout(() => {
+      binSearchInputRef.current?.focus();
+    }, 0);
+
+    return () => {
+      clearTimeout(focusTimer);
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [binDropdownOpen]);
 
   const resetForm = () => {
     setEditingId(null);
@@ -327,14 +433,66 @@ export default function Cvv() {
           <div className="cvv-form-grid">
             <div className="cvv-form-group">
               <label htmlFor="bin">Bin Field</label>
-              <input
-                id="bin"
-                type="text"
-                placeholder="e.g. 453288"
-                value={bin}
-                onChange={(e) => setBin(e.target.value)}
-                required
-              />
+              <div className="cvv-select-wrapper">
+                <button
+                  id="bin-trigger"
+                  type="button"
+                  className="cvv-select-trigger"
+                  onClick={() => setBinDropdownOpen((prev) => !prev)}
+                  aria-expanded={binDropdownOpen}
+                >
+                  <span className={bin ? "" : "cvv-select-placeholder"}>
+                    {bin || "Select bin"}
+                  </span>
+                  <span className="cvv-select-arrow">
+                    {binDropdownOpen ? "▲" : "▼"}
+                  </span>
+                </button>
+
+                {binDropdownOpen && (
+                  <div className="cvv-select-menu">
+                    <div className="cvv-select-search-box">
+                      <input
+                        ref={binSearchInputRef}
+                        type="text"
+                        className="cvv-select-search-input"
+                        placeholder="Search bin..."
+                        value={binSearch}
+                        onChange={(e) => setBinSearch(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+
+                    <div className="cvv-select-options">
+                      {filteredBin.length > 0 ? (
+                        filteredBin.map((item, index) => {
+                          const isSelected = item === bin;
+                          return (
+                            <button
+                              key={`${item}-${index}`}
+                              type="button"
+                              className={`cvv-select-option ${
+                                isSelected ? "selected" : ""
+                              }`}
+                              onClick={() => {
+                                setBin(item);
+                                setBinSearch("");
+                                setBinDropdownOpen(false);
+                              }}
+                            >
+                              {item}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div className="cvv-select-no-results">
+                          No matching bins found
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="cvv-form-group" ref={bankDropdownRef}>
@@ -478,13 +636,66 @@ export default function Cvv() {
 
             <div className="cvv-form-group">
               <label htmlFor="zip">Zip</label>
-              <input
-                id="zip"
-                type="text"
-                placeholder="10001"
-                value={zip}
-                onChange={(e) => setZip(e.target.value)}
-              />
+              <div className="cvv-select-wrapper">
+                <button
+                  id="zip-trigger"
+                  type="button"
+                  className="cvv-select-trigger"
+                  onClick={() => setZipDropdownOpen((prev) => !prev)}
+                  aria-expanded={zipDropdownOpen}
+                >
+                  <span className={zip ? "" : "cvv-select-placeholder"}>
+                    {zip || "Select zip"}
+                  </span>
+                  <span className="cvv-select-arrow">
+                    {zipDropdownOpen ? "▲" : "▼"}
+                  </span>
+                </button>
+
+                {zipDropdownOpen && (
+                  <div className="cvv-select-menu">
+                    <div className="cvv-select-search-box">
+                      <input
+                        ref={zipSearchInputRef}
+                        type="text"
+                        className="cvv-select-search-input"
+                        placeholder="Search zip..."
+                        value={zipSearch}
+                        onChange={(e) => setZipSearch(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+
+                    <div className="cvv-select-options">
+                      {filteredZip.length > 0 ? (
+                        filteredZip.map((item, index) => {
+                          const isSelected = item === bank;
+                          return (
+                            <button
+                              key={`${item}-${index}`}
+                              type="button"
+                              className={`cvv-select-option ${
+                                isSelected ? "selected" : ""
+                              }`}
+                              onClick={() => {
+                                setZip(item);
+                                setZipSearch("");
+                                setZipDropdownOpen(false);
+                              }}
+                            >
+                              {item}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div className="cvv-select-no-results">
+                          No matching Zips found
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="cvv-form-group">

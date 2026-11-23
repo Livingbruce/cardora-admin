@@ -12,6 +12,12 @@ const formatPaymentDate = (iso) => {
   return d.toISOString().slice(0, 16).replace("T", " ");
 };
 
+const extractErrorMessage = (err, fallback = "Unexpected error occurred.") => {
+  if (!err) return fallback;
+  if (typeof err === "string") return err;
+  return err.message || err.details || err.hint || fallback;
+};
+
 export default function Payments() {
   const [activeTab, setActiveTab] = useState("pending");
   const [payments, setPayments] = useState([]);
@@ -19,6 +25,7 @@ export default function Payments() {
   const [processingId, setProcessingId] = useState(null);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [copiedTxId, setCopiedTxId] = useState(false);
+  const [actionError, setActionError] = useState("");
 
   // Fetch payments
   const fetchPayments = useCallback(async (isMounted = () => true) => {
@@ -58,9 +65,14 @@ export default function Payments() {
 
       if (isMounted()) {
         setPayments(normalized);
+        setActionError("");
       }
     } catch (err) {
-      console.error("Error fetching payments:", err.message);
+      const msg = extractErrorMessage(err, "Failed to load payments.");
+      console.error("Error fetching payments:", msg);
+      if (isMounted()) {
+        setActionError(msg);
+      }
     } finally {
       if (isMounted()) {
         setLoading(false);
@@ -86,6 +98,7 @@ export default function Payments() {
   // Open payment details
   const handleOpenPaymentPrompt = (payment) => {
     setCopiedTxId(false);
+    setActionError("");
     setSelectedPayment(payment);
   };
 
@@ -94,6 +107,7 @@ export default function Payments() {
     if (processingId) return;
 
     setCopiedTxId(false);
+    setActionError("");
     setSelectedPayment(null);
   };
 
@@ -121,122 +135,207 @@ export default function Payments() {
     }
   };
 
+  const rollbackPaymentToPending = async (paymentId) => {
+    try {
+      await supabase
+        .from("payments")
+        .update({ status: "pending", approved_at: null })
+        .eq("id", paymentId)
+        .eq("status", "approved");
+    } catch (rollbackErr) {
+      console.error("Rollback failed for payment", paymentId, rollbackErr);
+    }
+  };
+
   // Approve or cancel payment
   const handleAction = async (payment, newStatus) => {
-    if (processingId) return;
+    if (processingId || !payment) return;
 
     setProcessingId(payment.id);
+    setActionError("");
 
     try {
       if (newStatus === "cancelled") {
-        const { error: cancelError } = await supabase
+        const { data: cancelledRow, error: cancelError } = await supabase
           .from("payments")
           .update({ status: "cancelled" })
           .eq("id", payment.id)
-          .eq("status", "pending");
+          .eq("status", "pending")
+          .select("id")
+          .maybeSingle();
 
         if (cancelError) {
-          alert("Failed to cancel payment: " + cancelError.message);
+          const msg = extractErrorMessage(cancelError, "Failed to cancel payment.");
+          setActionError(msg);
+          alert("Failed to cancel payment: " + msg);
+          return;
+        }
+
+        if (!cancelledRow) {
+          const msg = "Payment is no longer pending or could not be updated.";
+          setActionError(msg);
+          alert(msg);
+          await fetchPayments();
           return;
         }
 
         await fetchPayments();
-
-        window.dispatchEvent(
-          new Event("cardora:payment-updated")
-        );
-
+        window.dispatchEvent(new Event("cardora:payment-updated"));
         setSelectedPayment(null);
-
         return;
       }
 
       if (newStatus === "approved") {
-        const { data: updatedPayment, error: approveError } =
-          await supabase
-            .from("payments")
-            .update({
-              status: "approved",
-              approved_at: new Date().toISOString(),
-            })
-            .eq("id", payment.id)
-            .eq("status", "pending")
-            .select("id, client_uid, package_amount")
-            .maybeSingle();
+        const creditAmount = Number(payment.amount ?? 0);
+
+        if (!payment.clientUid) {
+          const msg = "Cannot approve payment: missing client_uid on payment record.";
+          setActionError(msg);
+          alert(msg);
+          return;
+        }
+
+        if (!Number.isFinite(creditAmount) || creditAmount <= 0) {
+          const msg = "Cannot approve payment: invalid payment amount.";
+          setActionError(msg);
+          alert(msg);
+          return;
+        }
+
+        // 1. Attempt atomic RPC approval + balance credit if available
+        const { data: rpcData, error: rpcError } = await supabase.rpc(
+          "approve_payment_and_credit_balance",
+          {
+            p_payment_id: payment.id,
+            p_credit_amount: Number(creditAmount.toFixed(2)),
+          }
+        );
+
+        const rpcMissing =
+          rpcError &&
+          (rpcError.code === "PGRST202" ||
+            /function .* does not exist/i.test(rpcError.message || ""));
+
+        if (!rpcMissing) {
+          if (rpcError) {
+            const msg = extractErrorMessage(
+              rpcError,
+              "Approval blocked because balance update failed."
+            );
+            setActionError(msg);
+            alert("Approval aborted: " + msg);
+            return;
+          }
+
+          const rpcResult = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+          const nextBalance = Number(rpcResult?.new_balance ?? creditAmount);
+
+          await fetchPayments();
+          window.dispatchEvent(new Event("cardora:payment-updated"));
+          setSelectedPayment(null);
+          alert(
+            `Approved $${creditAmount.toFixed(2)} for ${payment.user}. Updated balance: $${nextBalance.toFixed(2)}`
+          );
+          return;
+        }
+
+        // 2. Fallback flow with strict pre-check and automatic rollback on failure
+        const { data: profile, error: profileFetchError } = await supabase
+          .from("profiles")
+          .select("uid, balance")
+          .eq("uid", payment.clientUid)
+          .maybeSingle();
+
+        if (profileFetchError) {
+          const msg = extractErrorMessage(
+            profileFetchError,
+            "Could not load client profile before approving payment."
+          );
+          setActionError(msg);
+          alert("Approval aborted: " + msg);
+          return;
+        }
+
+        if (!profile) {
+          const msg = `Client profile not found for UID (${payment.clientUid}). Payment was NOT approved.`;
+          setActionError(msg);
+          alert(msg);
+          return;
+        }
+
+        const approvedTimestamp = new Date().toISOString();
+        const { data: updatedPayment, error: approveError } = await supabase
+          .from("payments")
+          .update({
+            status: "approved",
+            approved_at: approvedTimestamp,
+          })
+          .eq("id", payment.id)
+          .eq("status", "pending")
+          .select("id, client_uid, package_amount")
+          .maybeSingle();
 
         if (approveError) {
-          alert("Failed to approve payment: " + approveError.message);
+          const msg = extractErrorMessage(
+            approveError,
+            "Failed to mark payment approved."
+          );
+          setActionError(msg);
+          alert("Approval aborted: " + msg);
           return;
         }
 
         if (!updatedPayment) {
-          alert("This payment was already processed.");
-
+          const msg = "This payment was already processed or is no longer pending.";
+          setActionError(msg);
+          alert(msg);
           await fetchPayments();
-
           setSelectedPayment(null);
-
           return;
         }
 
-        // Fetch client profile
-        const { data: profile, error: profileFetchError } =
-          await supabase
-            .from("profiles")
-            .select("uid, balance")
-            .eq("uid", updatedPayment.client_uid)
-            .maybeSingle();
-
-        if (profileFetchError || !profile) {
-          alert(
-            "Payment marked approved, but client profile was not found to credit balance."
-          );
-
-          await fetchPayments();
-
-          setSelectedPayment(null);
-
-          return;
-        }
-
-        // Save the approved payment amount directly to profile balance
-        const creditAmount = Number(
-          updatedPayment.package_amount ?? payment.amount ?? 0
+        const resolvedAmount = Number(
+          updatedPayment.package_amount ?? creditAmount
         );
+        const nextBalance = Number(resolvedAmount.toFixed(2));
 
-        const nextBalance = Number(creditAmount.toFixed(2));
-
-        // Update client balance
-        const { error: balanceError } = await supabase
+        const { data: updatedProfile, error: balanceError } = await supabase
           .from("profiles")
           .update({ balance: nextBalance })
-          .eq("uid", updatedPayment.client_uid);
+          .eq("uid", updatedPayment.client_uid)
+          .select("uid, balance")
+          .maybeSingle();
 
-        if (balanceError) {
-          alert(
-            "Payment approved, but updating profile balance failed: " +
-              balanceError.message
-          );
+        if (balanceError || !updatedProfile) {
+          await rollbackPaymentToPending(updatedPayment.id);
+          const msg = balanceError
+            ? extractErrorMessage(
+                balanceError,
+                "Failed to update client balance; approval was rolled back."
+              )
+            : "Client balance row was not updated; approval was rolled back.";
 
+          setActionError(msg);
           await fetchPayments();
-
-          setSelectedPayment(null);
-
+          alert("Approval failed — payment reverted to pending: " + msg);
           return;
         }
 
         await fetchPayments();
-
-        window.dispatchEvent(
-          new Event("cardora:payment-updated")
-        );
-
+        window.dispatchEvent(new Event("cardora:payment-updated"));
         setSelectedPayment(null);
-
         alert(
-          `Approved $${creditAmount.toFixed(2)} for ${payment.user}. New balance: $${nextBalance.toFixed(2)}`
+          `Approved $${resolvedAmount.toFixed(2)} for ${payment.user}. Updated balance: $${Number(updatedProfile.balance ?? nextBalance).toFixed(2)}`
         );
       }
+    } catch (err) {
+      const msg = extractErrorMessage(
+        err,
+        "A critical error occurred while processing payment."
+      );
+      console.error("Critical payment action error:", err);
+      setActionError(msg);
+      alert("Critical error: " + msg);
     } finally {
       setProcessingId(null);
     }
@@ -250,6 +349,24 @@ export default function Payments() {
   return (
     <div className="payments-container">
       <h2 className="payments-header">Manage Payments</h2>
+
+      {actionError && !selectedPayment && (
+        <div
+          role="alert"
+          style={{
+            backgroundColor: "#fee2e2",
+            color: "#991b1b",
+            border: "1px solid #fca5a5",
+            borderRadius: "8px",
+            padding: "10px 14px",
+            marginBottom: "14px",
+            fontSize: "0.9rem",
+            fontWeight: 600,
+          }}
+        >
+          {actionError}
+        </div>
+      )}
 
       {/* Tab Navigation */}
       <div className="payments-tabs">
@@ -422,6 +539,24 @@ export default function Payments() {
             >
               Payment Details — #{selectedPayment.id}
             </h3>
+
+            {actionError && (
+              <div
+                role="alert"
+                style={{
+                  backgroundColor: "#fee2e2",
+                  color: "#991b1b",
+                  border: "1px solid #fca5a5",
+                  borderRadius: "8px",
+                  padding: "10px 12px",
+                  marginBottom: "14px",
+                  fontSize: "0.86rem",
+                  fontWeight: 600,
+                }}
+              >
+                {actionError}
+              </div>
+            )}
 
             {/* Transaction ID */}
             <div
