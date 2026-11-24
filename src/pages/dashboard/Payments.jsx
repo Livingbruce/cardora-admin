@@ -297,7 +297,8 @@ export default function Payments() {
         const resolvedAmount = Number(
           updatedPayment.package_amount ?? creditAmount
         );
-        const nextBalance = Number(resolvedAmount.toFixed(2));
+        const currentBalance = Number(profile.balance ?? 0);
+        const nextBalance = Number((currentBalance + resolvedAmount).toFixed(2));
 
         const { data: updatedProfile, error: balanceError } = await supabase
           .from("profiles")
@@ -321,11 +322,31 @@ export default function Payments() {
           return;
         }
 
+        const { data: verifiedProfile, error: verifyError } = await supabase
+          .from("profiles")
+          .select("balance")
+          .eq("uid", updatedPayment.client_uid)
+          .maybeSingle();
+
+        if (verifyError || !verifiedProfile) {
+          await rollbackPaymentToPending(updatedPayment.id);
+          const msg = extractErrorMessage(
+            verifyError,
+            "Could not verify updated client balance; approval was rolled back."
+          );
+          setActionError(msg);
+          await fetchPayments();
+          alert("Approval failed — payment reverted to pending: " + msg);
+          return;
+        }
+
+        const actualBalance = Number(verifiedProfile.balance ?? nextBalance);
+
         await fetchPayments();
         window.dispatchEvent(new Event("cardora:payment-updated"));
         setSelectedPayment(null);
         alert(
-          `Approved $${resolvedAmount.toFixed(2)} for ${payment.user}. Updated balance: $${Number(updatedProfile.balance ?? nextBalance).toFixed(2)}`
+          `Approved $${resolvedAmount.toFixed(2)} for ${payment.user}. Updated balance: $${actualBalance.toFixed(2)}`
         );
       }
     } catch (err) {
